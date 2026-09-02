@@ -1,0 +1,506 @@
+import { SecurityAlert, AttackingIP, LogEvent, DetectionRule, ThreatGeoNode, SiemMetrics } from '../types';
+
+export const INITIAL_METRICS: SiemMetrics = {
+  totalEvents: 14200000,
+  activeAlerts: 142,
+  criticalAlerts: 3,
+  uniqueIps: 1200,
+  blockedIps: 842,
+  eventsPerSec: 890
+};
+
+export const INITIAL_ALERTS: SecurityAlert[] = [
+  {
+    id: 'ALT-9042',
+    timestamp: '2023-10-27 14:32:01',
+    severity: 'critical',
+    sourceIp: '185.17.43.99',
+    eventType: 'Multiple Failed Logins (Admin)',
+    status: 'open',
+    description: 'Over 48 failed authentication attempts to /wp-login.php & /admin/auth within 45 seconds from single source IP.',
+    relatedEventsCount: 48,
+    country: 'Russia',
+    countryCode: 'RU',
+    ruleTriggered: 'RULE-BF-01: Admin Brute Force Storm',
+    rawLogSample: '185.17.43.99 - - [27/Oct/2023:14:32:01 +0000] "POST /admin/login HTTP/1.1" 401 532 "https://corp-internal.net/admin" "Hydra/v9.4 (Linux)"',
+    analystNotes: 'Originating from known bulletproof VPS subnet AS49505. Immediate firewall block recommended.',
+    assignedAnalyst: 'SOC-Lead (Tier 3)',
+    blocked: false
+  },
+  {
+    id: 'ALT-9041',
+    timestamp: '2023-10-27 14:31:45',
+    severity: 'critical',
+    sourceIp: '10.0.4.15',
+    eventType: 'Ransomware Behavior Detected',
+    status: 'open',
+    description: 'High frequency mass file rename (.lockbit extension appended) and shadow copy deletion command detected on file server.',
+    relatedEventsCount: 124,
+    country: 'Internal Network',
+    countryCode: 'LAN',
+    ruleTriggered: 'RULE-RANSOM-04: Mass Encryption & VSS Deletion',
+    rawLogSample: 'Oct 27 14:31:45 corp-fs02 kernel: [EDR_ALERT] vssadmin.exe delete shadows /all /quiet && bcdedit /set default bootstatuspolicy ignoreallfailures',
+    analystNotes: 'Host quarantined from VLAN 4. Memory dump requested for forensics.',
+    assignedAnalyst: 'Incident Response Team',
+    blocked: true
+  },
+  {
+    id: 'ALT-9039',
+    timestamp: '2023-10-27 14:30:12',
+    severity: 'high',
+    sourceIp: '45.22.19.112',
+    eventType: 'Port Scan (External)',
+    status: 'reviewing',
+    description: 'Synchronous TCP SYN scan sweeping top 1,000 ports across external perimeter gateway in 12 seconds.',
+    relatedEventsCount: 1000,
+    country: 'China',
+    countryCode: 'CN',
+    ruleTriggered: 'RULE-SCAN-02: Rapid Port Sweep Anomaly',
+    rawLogSample: 'Oct 27 14:30:12 perimeter-gw iptables: [SYN_FLOOD_DROP] IN=eth0 SRC=45.22.19.112 DST=198.51.100.2 PROTO=TCP DPT=3389 FLAGS=SYN',
+    analystNotes: 'Identified reconnaissance preceding targeted RDP exploitation.',
+    assignedAnalyst: 'Analyst Sarah Chen',
+    blocked: false
+  },
+  {
+    id: 'ALT-9038',
+    timestamp: '2023-10-27 14:28:55',
+    severity: 'medium',
+    sourceIp: '192.168.1.105',
+    eventType: 'Unusual Outbound Traffic',
+    status: 'pending',
+    description: 'Workstation uploading anomalous 4.8 GB compressed archive to foreign non-standard HTTPS port 8443.',
+    relatedEventsCount: 18,
+    country: 'Internal Network',
+    countryCode: 'LAN',
+    ruleTriggered: 'RULE-EXFIL-03: Baseline Data Exfiltration Anomaly',
+    rawLogSample: 'Oct 27 14:28:55 netflow-agent: SRC=192.168.1.105 DST=185.220.101.5 DPT=8443 BYTES_SENT=5142880000 DURATION=142s PROTO=TCP',
+    analystNotes: 'Checking whether user initiated authorized cloud backup or possible C2 beacon.',
+    assignedAnalyst: 'Analyst Alex Miller',
+    blocked: false
+  },
+  {
+    id: 'ALT-9035',
+    timestamp: '2023-10-27 14:25:10',
+    severity: 'low',
+    sourceIp: 'Internal Network',
+    eventType: 'Configuration Change (FW)',
+    status: 'auto-closed',
+    description: 'Admin security group rule modified by authorized DevOps pipeline runner.',
+    relatedEventsCount: 1,
+    country: 'United States',
+    countryCode: 'US',
+    ruleTriggered: 'RULE-AUDIT-01: Firewall Rule Mutation',
+    rawLogSample: 'Oct 27 14:25:10 aws-cloudtrail: {"eventSource":"ec2.amazonaws.com","eventName":"AuthorizeSecurityGroupIngress","user":"terraform-runner"}',
+    analystNotes: 'Auto-closed after verifying automated git commit SHA-89fa21 verified by CI.',
+    assignedAnalyst: 'Sentinel Auto-Mitigation Bot',
+    blocked: false
+  },
+  {
+    id: 'ALT-9034',
+    timestamp: '2023-10-27 14:21:04',
+    severity: 'high',
+    sourceIp: '91.200.12.5',
+    eventType: 'SQL Injection Attack (UNION SELECT)',
+    status: 'open',
+    description: 'Exploitation attempt targeting /api/v2/catalog using SQL UNION SELECT statement in query string.',
+    relatedEventsCount: 14,
+    country: 'Brazil',
+    countryCode: 'BR',
+    ruleTriggered: 'RULE-SQLI-01: SQL Meta-character Injection',
+    rawLogSample: '91.200.12.5 - - [27/Oct/2023:14:21:04 +0000] "GET /api/v2/catalog?category=electronics%27%20UNION%20SELECT%20null,username,password_hash%20FROM%20users-- HTTP/1.1" 403 312 "-" "sqlmap/1.6#stable"',
+    analystNotes: 'WAF successfully intercepted payload with 403 Forbidden. Source IP flagged.',
+    assignedAnalyst: 'Analyst Marcus Vance',
+    blocked: false
+  },
+  {
+    id: 'ALT-9031',
+    timestamp: '2023-10-27 14:15:32',
+    severity: 'medium',
+    sourceIp: '103.245.236.1',
+    eventType: 'Sensitive Path Discovery (/.env)',
+    status: 'reviewing',
+    description: 'Automated crawler scanning for exposed environment configuration files and Git repositories.',
+    relatedEventsCount: 32,
+    country: 'Vietnam',
+    countryCode: 'VN',
+    ruleTriggered: 'RULE-PROBE-02: Secret & Dotfile Enumeration',
+    rawLogSample: '103.245.236.1 - - [27/Oct/2023:14:15:32 +0000] "GET /.env HTTP/1.1" 404 162 "-" "masscan/1.3"',
+    analystNotes: 'Probing for .env, .git/config, and /actuator/heapdump. All 404.',
+    assignedAnalyst: 'Analyst Sarah Chen',
+    blocked: false
+  }
+];
+
+export const INITIAL_ATTACKING_IPS: AttackingIP[] = [
+  {
+    ip: '185.17.43.99',
+    country: 'Russia',
+    countryCode: 'RU',
+    count: 4291,
+    lastSeen: '1 min ago',
+    riskScore: 98,
+    category: 'Brute Force Botnet',
+    status: 'active',
+    attacks: ['SSH Brute Force', 'WordPress XMLRPC Exploit', 'Admin Portal Flooding'],
+    asn: 'AS49505 - Selectel Hosting Ltd',
+    hostname: 'vps-49505-node.saint-petersburg.net'
+  },
+  {
+    ip: '45.22.19.112',
+    country: 'China',
+    countryCode: 'CN',
+    count: 2105,
+    lastSeen: '4 mins ago',
+    riskScore: 89,
+    category: 'Network Reconnaissance',
+    status: 'active',
+    attacks: ['Port Sweep', 'RDP Credential Spraying', 'CVE-2023-34362 Probe'],
+    asn: 'AS4134 - China Telecom Backbone',
+    hostname: 'shanghai-gw-pool14.ctc.cn'
+  },
+  {
+    ip: '91.200.12.5',
+    country: 'Brazil',
+    countryCode: 'BR',
+    count: 842,
+    lastSeen: '11 mins ago',
+    riskScore: 78,
+    category: 'Web Application Exploit',
+    status: 'active',
+    attacks: ['SQL Injection', 'Cross-Site Scripting (XSS)', 'LFI /etc/passwd'],
+    asn: 'AS28573 - Claro Brasil',
+    hostname: 'sp-host-dialup-091.claro.br'
+  },
+  {
+    ip: '194.26.29.11',
+    country: 'Germany',
+    countryCode: 'DE',
+    count: 620,
+    lastSeen: '25 mins ago',
+    riskScore: 65,
+    category: 'Vulnerability Scanner',
+    status: 'monitoring',
+    attacks: ['Nikto Scan', 'Log4j JNDI Exploit Probe'],
+    asn: 'AS24940 - Hetzner Online GmbH',
+    hostname: 'scanner-node-03.hetzner.de'
+  },
+  {
+    ip: '103.245.236.1',
+    country: 'Vietnam',
+    countryCode: 'VN',
+    count: 489,
+    lastSeen: '42 mins ago',
+    riskScore: 71,
+    category: 'Endpoint Probing',
+    status: 'monitoring',
+    attacks: ['Dotfile Crawling', 'Spring Boot Actuator Scan'],
+    asn: 'AS135905 - Viettel Group',
+    hostname: 'hn-fiber-dyn.viettel.vn'
+  }
+];
+
+export const INITIAL_LOG_EVENTS: LogEvent[] = [
+  {
+    id: 'log-1001',
+    timestamp: '2023-10-27 14:32:01.412',
+    sourceIp: '185.17.43.99',
+    destinationIp: '10.0.1.5',
+    method: 'POST',
+    endpoint: '/admin/login',
+    statusCode: 401,
+    userAgent: 'Hydra/v9.4 (Linux; x86_64)',
+    rawMessage: '185.17.43.99 - - [27/Oct/2023:14:32:01 +0000] "POST /admin/login HTTP/1.1" 401 532 "https://corp-internal.net/admin" "Hydra/v9.4 (Linux)"',
+    logType: 'nginx',
+    country: 'Russia',
+    countryCode: 'RU',
+    isAnomaly: true,
+    attackType: 'Brute Force',
+    bytes: 532
+  },
+  {
+    id: 'log-1002',
+    timestamp: '2023-10-27 14:31:59.882',
+    sourceIp: '185.17.43.99',
+    destinationIp: '10.0.1.5',
+    method: 'POST',
+    endpoint: '/admin/login',
+    statusCode: 401,
+    userAgent: 'Hydra/v9.4 (Linux; x86_64)',
+    rawMessage: '185.17.43.99 - - [27/Oct/2023:14:31:59 +0000] "POST /admin/login HTTP/1.1" 401 532 "https://corp-internal.net/admin" "Hydra/v9.4 (Linux)"',
+    logType: 'nginx',
+    country: 'Russia',
+    countryCode: 'RU',
+    isAnomaly: true,
+    attackType: 'Brute Force',
+    bytes: 532
+  },
+  {
+    id: 'log-1003',
+    timestamp: '2023-10-27 14:31:45.109',
+    sourceIp: '10.0.4.15',
+    destinationIp: '10.0.4.1',
+    method: 'EXEC',
+    endpoint: 'vssadmin.exe',
+    statusCode: 0,
+    userAgent: 'System/WinEventLog',
+    rawMessage: 'Oct 27 14:31:45 corp-fs02 kernel: [EDR_ALERT] vssadmin.exe delete shadows /all /quiet && bcdedit /set default bootstatuspolicy ignoreallfailures',
+    logType: 'syslog',
+    country: 'Internal Network',
+    countryCode: 'LAN',
+    isAnomaly: true,
+    attackType: 'Ransomware Tactic',
+    bytes: 140
+  },
+  {
+    id: 'log-1004',
+    timestamp: '2023-10-27 14:30:12.651',
+    sourceIp: '45.22.19.112',
+    destinationIp: '198.51.100.2',
+    method: 'TCP_SYN',
+    endpoint: ':3389',
+    statusCode: 444,
+    userAgent: 'Nmap Scripting Engine (NSE)',
+    rawMessage: 'Oct 27 14:30:12 perimeter-gw iptables: [SYN_FLOOD_DROP] IN=eth0 SRC=45.22.19.112 DST=198.51.100.2 PROTO=TCP DPT=3389 FLAGS=SYN',
+    logType: 'firewall',
+    country: 'China',
+    countryCode: 'CN',
+    isAnomaly: true,
+    attackType: 'Port Scan',
+    bytes: 60
+  },
+  {
+    id: 'log-1005',
+    timestamp: '2023-10-27 14:28:55.224',
+    sourceIp: '192.168.1.105',
+    destinationIp: '185.220.101.5',
+    method: 'HTTPS_POST',
+    endpoint: ':8443/upload',
+    statusCode: 200,
+    userAgent: 'curl/7.88.1',
+    rawMessage: 'Oct 27 14:28:55 netflow-agent: SRC=192.168.1.105 DST=185.220.101.5 DPT=8443 BYTES_SENT=5142880000 DURATION=142s PROTO=TCP',
+    logType: 'firewall',
+    country: 'Internal Network',
+    countryCode: 'LAN',
+    isAnomaly: true,
+    attackType: 'Data Exfiltration',
+    bytes: 5142880
+  },
+  {
+    id: 'log-1006',
+    timestamp: '2023-10-27 14:25:10.010',
+    sourceIp: '172.16.0.4',
+    destinationIp: '10.0.0.1',
+    method: 'API_CALL',
+    endpoint: '/v1/security-groups/ingress',
+    statusCode: 200,
+    userAgent: 'Terraform/1.5.7 (+https://www.terraform.io)',
+    rawMessage: 'Oct 27 14:25:10 aws-cloudtrail: {"eventSource":"ec2.amazonaws.com","eventName":"AuthorizeSecurityGroupIngress","user":"terraform-runner"}',
+    logType: 'syslog',
+    country: 'United States',
+    countryCode: 'US',
+    isAnomaly: false,
+    bytes: 1240
+  },
+  {
+    id: 'log-1007',
+    timestamp: '2023-10-27 14:21:04.912',
+    sourceIp: '91.200.12.5',
+    destinationIp: '10.0.1.8',
+    method: 'GET',
+    endpoint: "/api/v2/catalog?category=electronics' UNION SELECT null,username,password_hash FROM users--",
+    statusCode: 403,
+    userAgent: 'sqlmap/1.6#stable (https://sqlmap.org)',
+    rawMessage: '91.200.12.5 - - [27/Oct/2023:14:21:04 +0000] "GET /api/v2/catalog?category=electronics%27%20UNION%20SELECT%20null,username,password_hash%20FROM%20users-- HTTP/1.1" 403 312 "-" "sqlmap/1.6#stable"',
+    logType: 'apache',
+    country: 'Brazil',
+    countryCode: 'BR',
+    isAnomaly: true,
+    attackType: 'SQL Injection',
+    bytes: 312
+  },
+  {
+    id: 'log-1008',
+    timestamp: '2023-10-27 14:20:00.119',
+    sourceIp: '66.249.66.1',
+    destinationIp: '10.0.1.8',
+    method: 'GET',
+    endpoint: '/robots.txt',
+    statusCode: 200,
+    userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    rawMessage: '66.249.66.1 - - [27/Oct/2023:14:20:00 +0000] "GET /robots.txt HTTP/1.1" 200 48 "-" "Googlebot/2.1"',
+    logType: 'nginx',
+    country: 'United States',
+    countryCode: 'US',
+    isAnomaly: false,
+    bytes: 48
+  }
+];
+
+export const INITIAL_DETECTION_RULES: DetectionRule[] = [
+  {
+    id: 'RULE-BF-01',
+    name: 'Admin Brute Force Storm',
+    description: 'Detects if failed logins from the same source IP exceed 5 attempts within a 60-second sliding window.',
+    severity: 'critical',
+    ruleType: 'brute_force',
+    threshold: 5,
+    windowSeconds: 60,
+    enabled: true,
+    matchCount: 42
+  },
+  {
+    id: 'RULE-PATH-02',
+    name: 'Sensitive Endpoint & Dotfile Probing',
+    description: 'Flags HTTP requests targeting sensitive paths: /.env, /wp-login.php, /actuator/env, /config.json, or /.git/config.',
+    severity: 'high',
+    ruleType: 'sensitive_path',
+    pattern: '/(\\.(env|git|aws|ssh)|wp-login|actuator|xmlrpc|phpmyadmin)/i',
+    enabled: true,
+    matchCount: 189
+  },
+  {
+    id: 'RULE-SQLI-03',
+    name: 'SQL Injection & Command Metachars',
+    description: 'Inspects query strings and POST bodies for UNION SELECT, OR 1=1, DROP TABLE, or stacked query operators.',
+    severity: 'critical',
+    ruleType: 'sqli_xss',
+    pattern: "(union\\s+select|1=1|--|;\\s*drop|exec\\(|xp_cmdshell)",
+    enabled: true,
+    matchCount: 15
+  },
+  {
+    id: 'RULE-VOL-04',
+    name: 'Traffic Volume Spike Anomaly',
+    description: 'Flags when an individual source IP request rate deviates by >300% from historical 10-minute baseline.',
+    severity: 'medium',
+    ruleType: 'volume_anomaly',
+    threshold: 150,
+    windowSeconds: 30,
+    enabled: true,
+    matchCount: 8
+  },
+  {
+    id: 'RULE-RANSOM-05',
+    name: 'Ransomware C2 & Volume Shadow Wipe',
+    description: 'Detects execution of vssadmin delete shadows, bcdedit boot suppression, or rapid file extension rewriting.',
+    severity: 'critical',
+    ruleType: 'ransomware_behavior',
+    enabled: true,
+    matchCount: 3
+  }
+];
+
+export const THREAT_GEO_NODES: ThreatGeoNode[] = [
+  {
+    id: 'node-ru',
+    name: 'Moscow / St. Petersburg Cluster',
+    country: 'Russia',
+    countryCode: 'RU',
+    lat: 55.7558,
+    lng: 37.6173,
+    xPercent: 62,
+    yPercent: 32,
+    alertCount: 4291,
+    severity: 'critical',
+    activeIp: '185.17.43.99',
+    attackType: 'Brute Force Botnet'
+  },
+  {
+    id: 'node-cn',
+    name: 'Shanghai / Beijing Grid',
+    country: 'China',
+    countryCode: 'CN',
+    lat: 31.2304,
+    lng: 121.4737,
+    xPercent: 78,
+    yPercent: 44,
+    alertCount: 2105,
+    severity: 'high',
+    activeIp: '45.22.19.112',
+    attackType: 'SYN Port Sweep'
+  },
+  {
+    id: 'node-br',
+    name: 'São Paulo Datacenter Pool',
+    country: 'Brazil',
+    countryCode: 'BR',
+    lat: -23.5505,
+    lng: -46.6333,
+    xPercent: 34,
+    yPercent: 74,
+    alertCount: 842,
+    severity: 'medium',
+    activeIp: '91.200.12.5',
+    attackType: 'SQL Injection Campaign'
+  },
+  {
+    id: 'node-de',
+    name: 'Frankfurt Scanner Node',
+    country: 'Germany',
+    countryCode: 'DE',
+    lat: 50.1109,
+    lng: 8.6821,
+    xPercent: 52,
+    yPercent: 34,
+    alertCount: 620,
+    severity: 'medium',
+    activeIp: '194.26.29.11',
+    attackType: 'Automated Vulnerability Scanner'
+  },
+  {
+    id: 'node-vn',
+    name: 'Hanoi Web Scraper',
+    country: 'Vietnam',
+    countryCode: 'VN',
+    lat: 21.0285,
+    lng: 105.8542,
+    xPercent: 76,
+    yPercent: 52,
+    alertCount: 489,
+    severity: 'medium',
+    activeIp: '103.245.236.1',
+    attackType: 'Dotfile Enumeration'
+  }
+];
+
+export const INITIAL_LOGS = INITIAL_LOG_EVENTS;
+export const INITIAL_GEO_NODES = THREAT_GEO_NODES;
+
+export const PRESET_ATTACK_SCENARIOS = [
+  {
+    id: 'attack_ssh_brute',
+    title: 'Russian Botnet SSH Brute Force Storm',
+    description: 'Simulates 50 rapid failed login attempts from 185.17.43.99 targeting root / admin users.',
+    severity: 'critical',
+    ip: '185.17.43.99',
+    logCount: 50,
+    type: 'Brute Force'
+  },
+  {
+    id: 'attack_sqli_wave',
+    title: 'SQL Injection Campaign against Catalog API',
+    description: 'Simulates sqlmap automated payload injections targeting user password hashes.',
+    severity: 'critical',
+    ip: '91.200.12.5',
+    logCount: 25,
+    type: 'SQLi Exploit'
+  },
+  {
+    id: 'attack_port_sweep',
+    title: 'Perimeter Port Scan & Reconnaissance',
+    description: 'Simulates SYN scan probing common enterprise ports (22, 80, 443, 3389, 8080).',
+    severity: 'high',
+    ip: '45.22.19.112',
+    logCount: 35,
+    type: 'Port Sweep'
+  },
+  {
+    id: 'attack_dotfile_crawler',
+    title: 'Mass Dotfile & Config Discovery Crawl',
+    description: 'Crawls /.env, /.git/config, /actuator/env, and backup zip files across web servers.',
+    severity: 'high',
+    ip: '103.245.236.1',
+    logCount: 20,
+    type: 'Sensitive Probe'
+  }
+];

@@ -1,0 +1,6 @@
+{
+  "name": "Sentinel SIEM",
+  "description": "Enterprise Security Information & Event Management (SIEM) Command Center with real-time log ingestion, threat detection engine, live attack telemetry, and SOC incident triage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
